@@ -1,0 +1,1 @@
+{"success":true,"message":"AI处理完成","data":{"intent":"CREATE_TICKET","result":{"id":7,"title":"AI创建工单","description":"请帮我创建一个工单：用户反馈登录异常","status":"OPEN","createTime":"2026-03-27T09:58:20.9023504"}}}
