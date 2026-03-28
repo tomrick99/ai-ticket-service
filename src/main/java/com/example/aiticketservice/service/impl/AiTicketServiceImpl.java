@@ -1,7 +1,7 @@
 package com.example.aiticketservice.service.impl;
 
 import com.example.aiticketservice.client.IntentClient;
-import com.example.aiticketservice.client.IntentType;
+import com.example.aiticketservice.client.IntentResult;
 import com.example.aiticketservice.dto.AiHandleResponse;
 import com.example.aiticketservice.dto.TicketCreateRequest;
 import com.example.aiticketservice.dto.TicketResponse;
@@ -26,21 +26,34 @@ public class AiTicketServiceImpl implements AiTicketService {
 
     @Override
     public AiHandleResponse handleText(String text) {
-        IntentType intent = intentClient.detectIntent(text);
+        IntentResult result = intentClient.analyze(text);
 
-        return switch (intent) {
-            case CREATE_TICKET -> new AiHandleResponse(intent.name(), handleCreate(text));
-            case QUERY_TICKET -> new AiHandleResponse(intent.name(), ticketService.getTicket(extractId(text)));
-            case CLOSE_TICKET -> new AiHandleResponse(intent.name(), ticketService.closeTicket(extractId(text)));
-            default -> new AiHandleResponse(intent.name(), "未识别到可执行意图，请使用“创建/查询/关闭”相关描述");
+        return switch (result.getIntent()) {
+            case CREATE_TICKET -> new AiHandleResponse(result.getIntent().name(), handleCreate(result, text));
+            case QUERY_TICKET -> new AiHandleResponse(result.getIntent().name(), ticketService.getTicket(requireTicketId(result, text)));
+            case CLOSE_TICKET -> new AiHandleResponse(result.getIntent().name(), ticketService.closeTicket(requireTicketId(result, text)));
+            default -> new AiHandleResponse(result.getIntent().name(), "未识别到可执行意图，请使用“创建/查询/关闭”相关描述");
         };
     }
 
-    private TicketResponse handleCreate(String text) {
+    private TicketResponse handleCreate(IntentResult result, String text) {
         TicketCreateRequest request = new TicketCreateRequest();
-        request.setTitle("AI创建工单");
-        request.setDescription(text);
+        String title = result.getTitle() != null && !result.getTitle().isBlank()
+                ? result.getTitle()
+                : "AI创建工单";
+        String description = result.getDescription() != null && !result.getDescription().isBlank()
+                ? result.getDescription()
+                : (text != null ? text : "");
+        request.setTitle(title);
+        request.setDescription(description);
         return ticketService.createTicket(request);
+    }
+
+    private Long requireTicketId(IntentResult result, String text) {
+        if (result.getTicketId() != null) {
+            return result.getTicketId();
+        }
+        return extractId(text);
     }
 
     private Long extractId(String text) {

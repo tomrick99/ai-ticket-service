@@ -1,6 +1,43 @@
 spring:
   application:
     name: ai-ticket-service
+  autoconfigure:
+    exclude:
+      - org.springdoc.webmvc.ui.SwaggerConfig
+  datasource:
+    url: jdbc:h2:mem:tickets;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
 
 server:
   port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+# AI：mock 为默认（测试与无网环境）；qwen 为通义兼容 HTTP。密钥勿写死，用环境变量注入。
+app:
+  ai:
+    provider: mock
+    fallback: mock
+  qwen:
+    base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    api-key: ${APP_QWEN_API_KEY:}
+    model: qwen-turbo
+    timeout: 60s
+    retry:
+      max-attempts: 3
+      delay-ms: 500

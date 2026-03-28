@@ -1,11 +1,7 @@
 package com.example.aiticketservice.repository;
 
 import com.example.aiticketservice.entity.Ticket;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
-
-public interface TicketRepository {
-    Ticket save(Ticket ticket);
-
-    Optional<Ticket> findById(Long id);
+public interface TicketRepository extends JpaRepository<Ticket, Long> {
 }

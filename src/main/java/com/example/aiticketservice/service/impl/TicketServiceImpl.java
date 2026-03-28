@@ -7,8 +7,6 @@ import com.example.aiticketservice.repository.TicketRepository;
 import com.example.aiticketservice.service.TicketService;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-
 @Service
 public class TicketServiceImpl implements TicketService {
     private static final String STATUS_OPEN = "OPEN";
@@ -26,7 +24,6 @@ public class TicketServiceImpl implements TicketService {
         ticket.setTitle(request.getTitle());
         ticket.setDescription(request.getDescription());
         ticket.setStatus(STATUS_OPEN);
-        ticket.setCreateTime(LocalDateTime.now());
         return toResponse(ticketRepository.save(ticket));
     }
 

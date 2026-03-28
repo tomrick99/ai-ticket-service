@@ -33,3 +33,11 @@ build/
 .vscode/
 
 out/
+target/
+.idea/
+*.iml
+*.log
+h2.cookies
+img.png
+run.out.log
+run.err.log

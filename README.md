@@ -1,15 +1,15 @@
-# AI Ticket Service
+﻿# AI Ticket Service
 
-一个基于 Spring Boot 的轻量级工单服务示例项目，提供传统 REST 接口与一个简单的 AI 文本处理入口。项目使用内存仓储保存工单，适合用于接口演示、课程实验、功能原型和二次开发练习。
+基于 Java 17 / Spring Boot 3.x 的轻量工单服务示例，提供：
 
-## 项目特性
+- 传统 Ticket CRUD 接口
+- AI 文本处理入口 `/ai/tickets/handle`
+- 默认 H2 本地运行
+- 可选 MySQL profile
+- Swagger / OpenAPI 文档
+- Docker / Docker Compose 启动方式
 
-- 基础工单能力：创建工单、查询工单、关闭工单
-- AI 入口：根据自然语言识别意图并执行对应工单操作
-- 统一返回结构：所有接口返回统一的 `ApiResponse`
-- 参数校验：基于 `jakarta validation`
-- 统一异常处理：对校验异常、业务异常进行统一封装
-- 零数据库依赖：默认使用内存仓储，启动简单
+当前阶段目标是先把接口、持久化、AI 路径、文档和容器化基础打稳，不接入真实 API key，也不改现有接口契约。
 
 ## 技术栈
 
@@ -17,286 +17,266 @@
 - Spring Boot 3.5.0
 - Spring Web
 - Spring Validation
-- Spring Boot Actuator
+- Spring Data JPA
+- H2 Database
+- MySQL Connector/J
+- springdoc OpenAPI / Swagger UI
 - Maven
 
-## 项目结构
+## 运行前要求
 
-```text
-ai-ticket-service
-├─ src/main/java/com/example/aiticketservice
-│  ├─ client        # AI 意图识别客户端与 mock 实现
-│  ├─ config        # 全局异常处理
-│  ├─ controller    # REST 接口层
-│  ├─ dto           # 请求/响应对象
-│  ├─ entity        # 实体对象
-│  ├─ repository    # 仓储接口与内存实现
-│  ├─ service       # 业务接口
-│  └─ service/impl  # 业务实现
-├─ src/main/resources
-│  └─ application.yaml
-├─ src/test
-└─ pom.xml
+### 1. JDK 17
+
+项目以 **Java 17** 为准。
+
+`pom.xml` 已显式使用：
+
+- `<java.version>17</java.version>`
+- `maven-compiler-plugin` 的 `<release>17</release>`
+
+如果你在命令行里使用 Maven Wrapper，建议先确认 `JAVA_HOME` 也指向 JDK 17，因为 `mvnw.cmd` 会优先使用 `JAVA_HOME`。
+
+Windows PowerShell 示例：
+
+```powershell
+$env:JAVA_HOME="C:\Program Files\Java\jdk-17"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+java -version
+.\mvnw.cmd -version
 ```
 
-## 核心设计
+### 2. Maven Wrapper
 
-### 1. 工单服务
+项目自带 Maven Wrapper，无需单独安装 Maven：
 
-项目通过 `TicketService` 提供以下能力：
+```powershell
+.\mvnw.cmd -version
+```
 
-- 创建工单
-- 根据 ID 查询工单
-- 根据 ID 关闭工单
+## 本地运行
 
-工单状态目前包含：
+### 默认 H2 启动
 
-- `OPEN`
-- `CLOSED`
-
-### 2. AI 文本处理
-
-`/ai/tickets/handle` 接口接收一段文本，通过 `MockIntentClient` 做关键词意图识别：
-
-- 包含“创建”或“新建” -> `CREATE_TICKET`
-- 包含“查询”或“查看” -> `QUERY_TICKET`
-- 包含“关闭”或“结束” -> `CLOSE_TICKET`
-- 其他情况 -> `UNKNOWN`
-
-当前实现是 mock 版本，便于本地演示。后续可以将 `IntentClient` 替换为真实大模型或第三方 NLP 服务。
-
-### 3. 数据存储
-
-项目当前使用 `InMemoryTicketRepository` 保存数据：
-
-- 数据保存在进程内存中
-- 服务重启后数据会丢失
-- 适合 demo，不适合生产环境
-
-## 运行环境
-
-- JDK 17+
-- Maven 3.9+，或直接使用项目自带的 Maven Wrapper
-
-## 启动方式
-
-### 方式一：使用 Maven Wrapper
-
-Windows:
+默认 profile 使用 H2 内存库，适合本地开发和测试：
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-macOS / Linux:
+启动后可访问：
 
-```bash
-./mvnw spring-boot:run
-```
+- 应用：`http://localhost:8080`
+- H2 Console：`http://localhost:8080/h2-console`
+- Swagger UI：`http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON：`http://localhost:8080/v3/api-docs`
 
-### 方式二：先打包再运行
+默认 H2 配置位于：
+
+- `src/main/resources/application.yaml`
+
+其中保留了当前默认行为：
+
+- H2 仍是默认数据源
+- 现有测试默认仍走 H2
+- 不需要额外数据库即可启动
+
+### 打包运行
+
+执行：
 
 ```powershell
-.\mvnw.cmd clean package
-java -jar target/ai-ticket-service-0.0.1-SNAPSHOT.jar
+.\mvnw.cmd -DskipTests package
 ```
 
-### 默认配置
-
-配置文件位于 `src/main/resources/application.yaml`：
-
-```yaml
-spring:
-  application:
-    name: ai-ticket-service
-
-server:
-  port: 8080
-```
-
-启动后默认访问地址：
+当前可执行 jar 输出为：
 
 ```text
-http://localhost:8080
+target/ai-ticket-service-0.0.1-SNAPSHOT-exec.jar
 ```
 
-## 接口说明
+运行方式：
 
-### 1. 创建工单
-
-- 方法：`POST`
-- 路径：`/tickets`
-
-请求示例：
-
-```json
-{
-  "title": "登录失败",
-  "description": "用户反馈账号无法登录系统"
-}
+```powershell
+java -jar target/ai-ticket-service-0.0.1-SNAPSHOT-exec.jar
 ```
 
-返回示例：
+之所以使用 `-exec.jar`，是为了避开 Windows 下 Spring Boot `repackage` 对主 jar 重命名时的锁文件问题。
 
-```json
-{
-  "success": true,
-  "message": "工单创建成功",
-  "data": {
-    "id": 1,
-    "title": "登录失败",
-    "description": "用户反馈账号无法登录系统",
-    "status": "OPEN",
-    "createTime": "2026-03-27T10:00:00"
-  }
-}
+## MySQL Profile
+
+项目新增了：
+
+- `src/main/resources/application-mysql.yaml`
+
+启用方式：
+
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=mysql --spring.datasource.url=jdbc:mysql://localhost:3306/ai_ticket_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8 --spring.datasource.username=root --spring.datasource.password=changeit"
 ```
 
-### 2. 查询工单
+也可以在 jar 方式下使用：
 
-- 方法：`GET`
-- 路径：`/tickets/{id}`
-
-示例：
-
-```text
-GET /tickets/1
+```powershell
+java -jar target/ai-ticket-service-0.0.1-SNAPSHOT-exec.jar --spring.profiles.active=mysql --spring.datasource.url=jdbc:mysql://localhost:3306/ai_ticket_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8 --spring.datasource.username=root --spring.datasource.password=changeit
 ```
 
-### 3. 关闭工单
+MySQL profile 特点：
 
-- 方法：`PUT`
-- 路径：`/tickets/{id}/close`
+- 默认不会生效，只有显式激活 `mysql` profile 才切换
+- 数据源账号密码通过环境变量或启动参数注入
+- `ddl-auto` 当前配置为 `update`
+- 默认 H2 配置不受影响
 
-示例：
+`application-mysql.yaml` 中的数据源占位符：
 
-```text
-PUT /tickets/1/close
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+
+## Swagger / OpenAPI
+
+已接入 springdoc，并补齐当前主要接口的基础注解。
+
+文档入口：
+
+- `http://localhost:8080/swagger-ui.html`
+- `http://localhost:8080/swagger-ui/index.html`
+- `http://localhost:8080/v3/api-docs`
+
+当前重点展示的接口：
+
+- `POST /tickets`
+- `GET /tickets/{id}`
+- `PUT /tickets/{id}/close`
+- `POST /ai/tickets/handle`
+
+说明：
+
+- 没有修改现有 Controller 路径
+- 没有修改请求字段名
+- 没有修改响应结构
+
+## Docker
+
+### Dockerfile
+
+项目已提供：
+
+- `Dockerfile`
+- `.dockerignore`
+
+构建镜像：
+
+```powershell
+docker build -t ai-ticket-service .
 ```
 
-### 4. AI 处理工单文本
+默认 H2 运行：
 
-- 方法：`POST`
-- 路径：`/ai/tickets/handle`
-
-请求示例 1：创建工单
-
-```json
-{
-  "text": "请帮我创建一个工单，内容是支付页面打不开"
-}
+```powershell
+docker run --rm -p 8080:8080 ai-ticket-service
 ```
 
-请求示例 2：查询工单
+### Docker Compose
 
-```json
-{
-  "text": "请查询工单 1"
-}
+项目已提供 `docker-compose.yml`，包含：
+
+- `app`
+- `mysql`
+
+启动：
+
+```powershell
+docker compose up --build
 ```
 
-请求示例 3：关闭工单
+Compose 默认行为：
 
-```json
-{
-  "text": "关闭工单 1"
-}
+- `app` 使用 `mysql` profile
+- `mysql` 使用可修改的示例账号密码
+- `APP_QWEN_API_KEY` 通过环境变量注入，不写死在镜像或配置文件里
+
+主要环境变量：
+
+- `MYSQL_DATABASE`
+- `MYSQL_USER`
+- `MYSQL_PASSWORD`
+- `MYSQL_ROOT_PASSWORD`
+- `APP_QWEN_API_KEY`
+
+## 环境变量
+
+### 数据库
+
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+
+### AI / Qwen
+
+- `APP_QWEN_API_KEY`
+- `APP_AI_PROVIDER`
+
+当前默认仍然是 mock provider，适合本地和无网环境。
+
+## 测试
+
+运行全部测试：
+
+```powershell
+.\mvnw.cmd test
 ```
 
-返回示例：
+如果你的 `JAVA_HOME` 还没切到 17，建议先设置：
 
-```json
-{
-  "success": true,
-  "message": "AI处理完成",
-  "data": {
-    "intent": "QUERY_TICKET",
-    "result": {
-      "id": 1,
-      "title": "AI创建工单",
-      "description": "请帮我创建一个工单，内容是支付页面打不开",
-      "status": "OPEN",
-      "createTime": "2026-03-27T10:05:00"
-    }
-  }
-}
+```powershell
+$env:JAVA_HOME="C:\Program Files\Java\jdk-17"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+.\mvnw.cmd test
 ```
 
-## 统一返回格式
+## 验证建议
 
-所有接口使用统一结构：
+### 1. 默认 H2 启动验证
 
-```json
-{
-  "success": true,
-  "message": "消息说明",
-  "data": {}
-}
+```powershell
+.\mvnw.cmd spring-boot:run
 ```
 
-失败时示例：
+检查：
 
-```json
-{
-  "success": false,
-  "message": "错误信息",
-  "data": null
-}
+- `http://localhost:8080/actuator/health`
+- `http://localhost:8080/swagger-ui.html`
+- `http://localhost:8080/v3/api-docs`
+
+### 2. MySQL profile 验证
+
+先准备 MySQL，再执行：
+
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=mysql --spring.datasource.url=jdbc:mysql://localhost:3306/ai_ticket_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8 --spring.datasource.username=root --spring.datasource.password=changeit"
 ```
 
-## 常见错误场景
+### 3. Docker Compose 验证
 
-- 请求字段为空：返回 400
-- 工单 ID 不存在：返回 400
-- AI 查询或关闭时未从文本中提取到数字 ID：返回 400
-- 未识别到明确意图：返回成功响应，但 `intent` 为 `UNKNOWN`
-
-## 快速测试
-
-### 使用 curl 创建工单
-
-```bash
-curl -X POST "http://localhost:8080/tickets" \
-  -H "Content-Type: application/json" \
-  -d "{\"title\":\"测试工单\",\"description\":\"这是一个测试\"}"
+```powershell
+docker compose up --build
 ```
 
-### 使用 curl 查询工单
+## 当前已完成
 
-```bash
-curl "http://localhost:8080/tickets/1"
-```
+- 默认 H2 本地运行
+- Ticket CRUD + JPA
+- AI 路径与测试
+- Swagger / OpenAPI
+- MySQL profile
+- Docker / Docker Compose 基础支持
+- Java 17 编译目标对齐
+- Windows 下 `package` 产物锁问题规避
 
-### 使用 curl 关闭工单
+## 当前仍未完成
 
-```bash
-curl -X PUT "http://localhost:8080/tickets/1/close"
-```
-
-### 使用 curl 调用 AI 接口
-
-```bash
-curl -X POST "http://localhost:8080/ai/tickets/handle" \
-  -H "Content-Type: application/json" \
-  -d "{\"text\":\"查询工单 1\"}"
-```
-
-## 后续可扩展方向
-
-- 接入 MySQL / PostgreSQL，替换内存仓储
-- 增加工单列表、分页、按状态筛选
-- 引入真实 AI/NLP 服务替代 `MockIntentClient`
-- 增加接口测试与集成测试
-- 接入 Swagger / OpenAPI 文档
-- 增加鉴权与权限控制
-
-## 说明
-
-当前项目更偏向演示和练习用途。如果后续需要用于实际业务，建议至少补齐以下能力：
-
-- 持久化存储
-- 日志与监控
-- 接口文档
-- 单元测试与集成测试
-- 并发与异常场景处理
-
+- 真实 Qwen / 其他 AI 提供方联调
+- 生产级 MySQL 部署参数
+- Docker / Compose 在当前机器上的实际运行验证
+- 更完整的鉴权、审计、监控和生产配置

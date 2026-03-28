@@ -2,24 +2,45 @@ package com.example.aiticketservice.client;
 
 import org.springframework.stereotype.Component;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
- * 模拟外部 AI 意图识别服务。
- * 这里只按关键词做最小可运行判断，后续可替换成真实大模型调用。
+ * 本地关键词模拟 AI，无网络依赖；结构化输出与 Qwen 路径对齐。
  */
 @Component
-public class MockIntentClient implements IntentClient {
-    @Override
-    public IntentType detectIntent(String text) {
+public class MockIntentClient {
+
+    private static final Pattern ID_PATTERN = Pattern.compile("(\\d+)");
+
+    public IntentResult analyze(String text) {
         String normalized = text == null ? "" : text.trim();
+        IntentType intent;
         if (normalized.contains("创建") || normalized.contains("新建")) {
-            return IntentType.CREATE_TICKET;
+            intent = IntentType.CREATE_TICKET;
+        } else if (normalized.contains("查询") || normalized.contains("查看")) {
+            intent = IntentType.QUERY_TICKET;
+        } else if (normalized.contains("关闭") || normalized.contains("结束")) {
+            intent = IntentType.CLOSE_TICKET;
+        } else {
+            intent = IntentType.UNKNOWN;
         }
-        if (normalized.contains("查询") || normalized.contains("查看")) {
-            return IntentType.QUERY_TICKET;
+
+        Long ticketId = extractTicketId(normalized, intent);
+        if (intent == IntentType.CREATE_TICKET) {
+            return new IntentResult(intent, null, "AI创建工单", normalized.isEmpty() ? text : normalized);
         }
-        if (normalized.contains("关闭") || normalized.contains("结束")) {
-            return IntentType.CLOSE_TICKET;
+        return new IntentResult(intent, ticketId, null, null);
+    }
+
+    private Long extractTicketId(String normalized, IntentType intent) {
+        if (intent != IntentType.QUERY_TICKET && intent != IntentType.CLOSE_TICKET) {
+            return null;
         }
-        return IntentType.UNKNOWN;
+        Matcher matcher = ID_PATTERN.matcher(normalized);
+        if (matcher.find()) {
+            return Long.parseLong(matcher.group(1));
+        }
+        return null;
     }
 }

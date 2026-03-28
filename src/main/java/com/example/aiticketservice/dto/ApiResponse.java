@@ -1,8 +1,14 @@
 package com.example.aiticketservice.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(name = "ApiResponse", description = "Standard API response wrapper")
 public class ApiResponse<T> {
+    @Schema(description = "Whether the request succeeded", example = "true")
     private boolean success;
+    @Schema(description = "Response message", example = "操作成功")
     private String message;
+    @Schema(description = "Response data")
     private T data;
 
     public ApiResponse() {
