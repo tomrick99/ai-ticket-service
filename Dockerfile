@@ -12,8 +12,21 @@ RUN ./mvnw -q -DskipTests package
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 
-COPY --from=builder /workspace/target/ai-ticket-service-0.0.1-SNAPSHOT-exec.jar app.jar
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --system --create-home --home-dir /app spring
+
+COPY --from=builder /workspace/target/ai-ticket-service-0.0.1-SNAPSHOT-exec.jar /app/app.jar
+
+ENV JAVA_OPTS=""
+ENV SPRING_PROFILES_ACTIVE=prod
+
+USER spring
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=5 \
+  CMD curl --fail --silent http://127.0.0.1:8080/actuator/health || exit 1
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

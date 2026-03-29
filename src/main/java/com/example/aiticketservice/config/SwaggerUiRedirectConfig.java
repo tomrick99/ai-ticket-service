@@ -1,10 +1,12 @@
 package com.example.aiticketservice.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
+@ConditionalOnProperty(prefix = "springdoc.swagger-ui", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class SwaggerUiRedirectConfig implements WebMvcConfigurer {
 
     private static final String SWAGGER_UI_REDIRECT =

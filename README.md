@@ -1,223 +1,248 @@
 ﻿# AI Ticket Service
 
-基于 Java 17 / Spring Boot 3.x 的轻量工单服务示例，提供：
+基于 Java 17 / Spring Boot 3.x 的轻量工单服务示例，当前已具备：
 
-- 传统 Ticket CRUD 接口
-- AI 文本处理入口 `/ai/tickets/handle`
-- 默认 H2 本地运行
-- 可选 MySQL profile
-- Swagger / OpenAPI 文档
-- Docker / Docker Compose 启动方式
-
-当前阶段目标是先把接口、持久化、AI 路径、文档和容器化基础打稳，不接入真实 API key，也不改现有接口契约。
+- Ticket CRUD 接口
+- AI 文本入口 `/ai/tickets/handle`
+- Mock / Qwen 可切换 provider
+- H2 本地开发与 MySQL 持久化
+- Flyway 最小迁移
+- Docker / Docker Compose 编排
+- 基础 API Key 鉴权、审计日志与 Actuator
 
 ## 技术栈
 
 - Java 17
 - Spring Boot 3.5.0
-- Spring Web
-- Spring Validation
-- Spring Data JPA
-- H2 Database
-- MySQL Connector/J
-- springdoc OpenAPI / Swagger UI
-- Maven
+- Spring Web / Validation / Data JPA / Actuator / WebFlux
+- H2 / MySQL
+- Flyway
+- springdoc OpenAPI
+- Maven Wrapper
 
-## 运行前要求
+## 快速开始
 
-### 1. JDK 17
+### 1. 本地默认启动
 
-项目以 **Java 17** 为准。
-
-`pom.xml` 已显式使用：
-
-- `<java.version>17</java.version>`
-- `maven-compiler-plugin` 的 `<release>17</release>`
-
-如果你在命令行里使用 Maven Wrapper，建议先确认 `JAVA_HOME` 也指向 JDK 17，因为 `mvnw.cmd` 会优先使用 `JAVA_HOME`。
-
-Windows PowerShell 示例：
-
-```powershell
-$env:JAVA_HOME="C:\Program Files\Java\jdk-17"
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
-java -version
-.\mvnw.cmd -version
-```
-
-### 2. Maven Wrapper
-
-项目自带 Maven Wrapper，无需单独安装 Maven：
-
-```powershell
-.\mvnw.cmd -version
-```
-
-## 本地运行
-
-### 默认 H2 启动
-
-默认 profile 使用 H2 内存库，适合本地开发和测试：
+默认 profile 是 `local`，使用 H2 内存库：
 
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
 
-启动后可访问：
+本地默认能力：
 
-- 应用：`http://localhost:8080`
 - H2 Console：`http://localhost:8080/h2-console`
 - Swagger UI：`http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON：`http://localhost:8080/v3/api-docs`
+- OpenAPI：`http://localhost:8080/v3/api-docs`
+- Actuator Health：`http://localhost:8080/actuator/health`
 
-默认 H2 配置位于：
+### 2. 本地调用受保护接口
 
-- `src/main/resources/application.yaml`
+当前采用固定 API Key Header 鉴权。
 
-其中保留了当前默认行为：
+默认请求头：
 
-- H2 仍是默认数据源
-- 现有测试默认仍走 H2
-- 不需要额外数据库即可启动
+- 鉴权头：`X-API-Key`
+- 调用方标识头：`X-Client-Id`
 
-### 打包运行
-
-执行：
-
-```powershell
-.\mvnw.cmd -DskipTests package
-```
-
-当前可执行 jar 输出为：
+`local` profile 下默认示例 key：
 
 ```text
-target/ai-ticket-service-0.0.1-SNAPSHOT-exec.jar
+local-dev-key
 ```
 
-运行方式：
+创建工单示例：
 
 ```powershell
+curl -X POST http://localhost:8080/tickets `
+  -H "Content-Type: application/json" `
+  -H "X-API-Key: local-dev-key" `
+  -H "X-Client-Id: local-script" `
+  -d "{\"title\":\"本地工单\",\"description\":\"用于本地验证\"}"
+```
+
+AI 路径示例：
+
+```powershell
+curl -X POST http://localhost:8080/ai/tickets/handle `
+  -H "Content-Type: application/json" `
+  -H "X-API-Key: local-dev-key" `
+  -H "X-Client-Id: local-script" `
+  -d "{\"text\":\"请帮我创建一个测试工单\"}"
+```
+
+## Profile 说明
+
+### `local`
+
+- 默认启用
+- 数据库使用 H2
+- H2 Console 开启
+- Swagger / OpenAPI 开启
+- Health 详情可见
+- 默认 `APP_SECURITY_API_KEY=local-dev-key`
+
+### `mysql`
+
+- 只切换数据源到 MySQL
+- 需要通过环境变量提供数据源账号密码
+- Flyway 启动时自动执行迁移
+
+### `prod`
+
+- 自动包含 `mysql`
+- H2 Console 关闭
+- Swagger / springdoc 关闭
+- 错误信息和日志暴露面更小
+- Actuator 只暴露 `health`、`info`、`metrics`
+- `APP_SECURITY_API_KEY` 需要显式提供，否则受保护接口会返回 `503`
+
+## MySQL 启动
+
+示例：
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE="mysql"
+$env:SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3306/ai_ticket_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8"
+$env:SPRING_DATASOURCE_USERNAME="ticket_user"
+$env:SPRING_DATASOURCE_PASSWORD="changeit"
+.\mvnw.cmd spring-boot:run
+```
+
+生产推荐：
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE="prod"
+$env:SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3306/ai_ticket_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8"
+$env:SPRING_DATASOURCE_USERNAME="ticket_user"
+$env:SPRING_DATASOURCE_PASSWORD="changeit"
+$env:APP_SECURITY_API_KEY="replace-with-app-key"
+$env:DASHSCOPE_API_KEY="replace-with-real-key"
+$env:QWEN_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
+$env:QWEN_MODEL="qwen-plus"
 java -jar target/ai-ticket-service-0.0.1-SNAPSHOT-exec.jar
 ```
 
-之所以使用 `-exec.jar`，是为了避开 Windows 下 Spring Boot `repackage` 对主 jar 重命名时的锁文件问题。
+## Qwen Provider
 
-## MySQL Profile
-
-项目新增了：
-
-- `src/main/resources/application-mysql.yaml`
-
-启用方式：
+切换到真实 Qwen：
 
 ```powershell
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=mysql --spring.datasource.url=jdbc:mysql://localhost:3306/ai_ticket_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8 --spring.datasource.username=root --spring.datasource.password=changeit"
+$env:APP_AI_PROVIDER="qwen"
+$env:APP_AI_FALLBACK="none"
+$env:DASHSCOPE_API_KEY="replace-with-real-key"
+$env:QWEN_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
+$env:QWEN_MODEL="qwen-plus"
 ```
 
-也可以在 jar 方式下使用：
+保留本地 mock：
 
 ```powershell
-java -jar target/ai-ticket-service-0.0.1-SNAPSHOT-exec.jar --spring.profiles.active=mysql --spring.datasource.url=jdbc:mysql://localhost:3306/ai_ticket_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8 --spring.datasource.username=root --spring.datasource.password=changeit
+$env:APP_AI_PROVIDER="mock"
 ```
 
-MySQL profile 特点：
+## Actuator 与审计
 
-- 默认不会生效，只有显式激活 `mysql` profile 才切换
-- 数据源账号密码通过环境变量或启动参数注入
-- `ddl-auto` 当前配置为 `update`
-- 默认 H2 配置不受影响
+当前保留的 Actuator 端点：
 
-`application-mysql.yaml` 中的数据源占位符：
+- `/actuator/health`
+- `/actuator/info`
+- `/actuator/metrics`
 
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
+访问策略：
 
-## Swagger / OpenAPI
+- `/actuator/health` 公开
+- 其余 actuator 端点默认需要 `X-API-Key`
+- `/tickets/**` 与 `/ai/tickets/**` 默认需要 `X-API-Key`
 
-已接入 springdoc，并补齐当前主要接口的基础注解。
+审计日志会记录：
 
-文档入口：
+- 请求时间
+- 请求路径
+- HTTP 方法
+- 响应状态码
+- 调用耗时
+- 调用方标识（优先读取 `X-Client-Id`）
+- 请求 ID
 
-- `http://localhost:8080/swagger-ui.html`
-- `http://localhost:8080/swagger-ui/index.html`
-- `http://localhost:8080/v3/api-docs`
+日志不会主动记录：
 
-当前重点展示的接口：
-
-- `POST /tickets`
-- `GET /tickets/{id}`
-- `PUT /tickets/{id}/close`
-- `POST /ai/tickets/handle`
-
-说明：
-
-- 没有修改现有 Controller 路径
-- 没有修改请求字段名
-- 没有修改响应结构
+- 完整 API key
+- 数据库密码
+- 外部 provider 原始敏感片段
 
 ## Docker
 
 ### Dockerfile
 
-项目已提供：
+项目包含：
 
 - `Dockerfile`
 - `.dockerignore`
 
+镜像特性：
+
+- 多阶段构建
+- 默认 `SPRING_PROFILES_ACTIVE=prod`
+- 启动后通过 `/actuator/health` 做容器健康检查
+- Flyway 随应用启动自动执行
+
 构建镜像：
 
 ```powershell
-docker build -t ai-ticket-service .
-```
-
-默认 H2 运行：
-
-```powershell
-docker run --rm -p 8080:8080 ai-ticket-service
+docker build -t ai-ticket-service:latest .
 ```
 
 ### Docker Compose
 
-项目已提供 `docker-compose.yml`，包含：
+项目包含：
+
+- `docker-compose.yml`
+- `.env.example`
+
+Compose 服务：
 
 - `app`
 - `mysql`
 
-启动：
+使用步骤：
 
 ```powershell
-docker compose up --build
+Copy-Item .env.example .env
+docker compose build
+docker compose up -d
 ```
 
-Compose 默认行为：
+如需本机覆盖端口或挂载调试配置，建议新增未提交的 `docker-compose.override.yml`。
 
-- `app` 使用 `mysql` profile
-- `mysql` 使用可修改的示例账号密码
-- `APP_QWEN_API_KEY` 通过环境变量注入，不写死在镜像或配置文件里
+## 关键环境变量
 
-主要环境变量：
+### 应用鉴权与审计
 
-- `MYSQL_DATABASE`
-- `MYSQL_USER`
-- `MYSQL_PASSWORD`
-- `MYSQL_ROOT_PASSWORD`
-- `APP_QWEN_API_KEY`
+- `APP_SECURITY_ENABLED`
+- `APP_SECURITY_API_KEY`
+- `APP_SECURITY_HEADER_NAME`
+- `APP_SECURITY_CLIENT_ID_HEADER`
+- `APP_AUDIT_ENABLED`
 
-## 环境变量
-
-### 数据库
+### MySQL
 
 - `SPRING_DATASOURCE_URL`
 - `SPRING_DATASOURCE_USERNAME`
 - `SPRING_DATASOURCE_PASSWORD`
+- `MYSQL_ROOT_PASSWORD`
+- `MYSQL_USER`
+- `MYSQL_PASSWORD`
+- `MYSQL_DATABASE`
 
-### AI / Qwen
+### Qwen
 
-- `APP_QWEN_API_KEY`
+- `DASHSCOPE_API_KEY`
+- `QWEN_BASE_URL`
+- `QWEN_MODEL`
 - `APP_AI_PROVIDER`
-
-当前默认仍然是 mock provider，适合本地和无网环境。
+- `APP_AI_FALLBACK`
 
 ## 测试
 
@@ -227,56 +252,22 @@ Compose 默认行为：
 .\mvnw.cmd test
 ```
 
-如果你的 `JAVA_HOME` 还没切到 17，建议先设置：
+## 当前状态
 
-```powershell
-$env:JAVA_HOME="C:\Program Files\Java\jdk-17"
-$env:Path="$env:JAVA_HOME\bin;$env:Path"
-.\mvnw.cmd test
-```
+已完成：
 
-## 验证建议
+- H2 / MySQL 双配置
+- Flyway 最小迁移
+- Docker / Compose 基础编排
+- Qwen provider 接入
+- API Key 鉴权
+- 审计日志
+- Actuator health / metrics
+- 生产 profile 收紧
 
-### 1. 默认 H2 启动验证
+待最后阶段统一执行：
 
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-检查：
-
-- `http://localhost:8080/actuator/health`
-- `http://localhost:8080/swagger-ui.html`
-- `http://localhost:8080/v3/api-docs`
-
-### 2. MySQL profile 验证
-
-先准备 MySQL，再执行：
-
-```powershell
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=mysql --spring.datasource.url=jdbc:mysql://localhost:3306/ai_ticket_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8 --spring.datasource.username=root --spring.datasource.password=changeit"
-```
-
-### 3. Docker Compose 验证
-
-```powershell
-docker compose up --build
-```
-
-## 当前已完成
-
-- 默认 H2 本地运行
-- Ticket CRUD + JPA
-- AI 路径与测试
-- Swagger / OpenAPI
-- MySQL profile
-- Docker / Docker Compose 基础支持
-- Java 17 编译目标对齐
-- Windows 下 `package` 产物锁问题规避
-
-## 当前仍未完成
-
-- 真实 Qwen / 其他 AI 提供方联调
-- 生产级 MySQL 部署参数
-- Docker / Compose 在当前机器上的实际运行验证
-- 更完整的鉴权、审计、监控和生产配置
+- Docker / Compose 实机验证
+- 生产环境联调验证
+- 重启后持久化验证
+- 鉴权、审计和日志脱敏实机检查

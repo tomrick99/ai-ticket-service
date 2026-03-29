@@ -1,7 +1,40 @@
-spring:
+﻿spring:
   config:
     activate:
       on-profile: prod
+  h2:
+    console:
+      enabled: false
+
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:never}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    AUDIT: ${LOG_LEVEL_AUDIT:INFO}
+    com.example.aiticketservice: ${LOG_LEVEL_APP:INFO}
+    org.springframework.web: WARN
+    org.springframework.boot.actuate: INFO
+    org.hibernate.SQL: OFF
 
 app:
   ai:
@@ -16,3 +49,5 @@ app:
     retry:
       max-attempts: ${QWEN_RETRY_MAX_ATTEMPTS:3}
       delay-ms: ${QWEN_RETRY_DELAY_MS:500}
+  security:
+    api-key: ${APP_SECURITY_API_KEY:}

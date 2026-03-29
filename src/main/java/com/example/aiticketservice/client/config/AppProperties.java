@@ -3,12 +3,16 @@ package com.example.aiticketservice.client.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @ConfigurationProperties(prefix = "app")
 public class AppProperties {
 
     private Ai ai = new Ai();
     private Qwen qwen = new Qwen();
+    private Security security = new Security();
+    private Audit audit = new Audit();
 
     public Ai getAi() {
         return ai;
@@ -24,6 +28,22 @@ public class AppProperties {
 
     public void setQwen(Qwen qwen) {
         this.qwen = qwen;
+    }
+
+    public Security getSecurity() {
+        return security;
+    }
+
+    public void setSecurity(Security security) {
+        this.security = security;
+    }
+
+    public Audit getAudit() {
+        return audit;
+    }
+
+    public void setAudit(Audit audit) {
+        this.audit = audit;
     }
 
     public static class Ai {
@@ -151,6 +171,83 @@ public class AppProperties {
             public void setDelayMs(long delayMs) {
                 this.delayMs = delayMs;
             }
+        }
+    }
+
+    public static class Security {
+        private boolean enabled = true;
+        private String apiKey = "";
+        private String headerName = "X-API-Key";
+        private String clientIdHeader = "X-Client-Id";
+        private List<String> protectedPaths = new ArrayList<>(List.of(
+                "/tickets/**",
+                "/ai/tickets/**",
+                "/actuator/**"
+        ));
+        private List<String> publicPaths = new ArrayList<>(List.of(
+                "/error",
+                "/actuator/health",
+                "/actuator/health/**"
+        ));
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        public String getHeaderName() {
+            return headerName;
+        }
+
+        public void setHeaderName(String headerName) {
+            this.headerName = headerName;
+        }
+
+        public String getClientIdHeader() {
+            return clientIdHeader;
+        }
+
+        public void setClientIdHeader(String clientIdHeader) {
+            this.clientIdHeader = clientIdHeader;
+        }
+
+        public List<String> getProtectedPaths() {
+            return protectedPaths;
+        }
+
+        public void setProtectedPaths(List<String> protectedPaths) {
+            this.protectedPaths = protectedPaths;
+        }
+
+        public List<String> getPublicPaths() {
+            return publicPaths;
+        }
+
+        public void setPublicPaths(List<String> publicPaths) {
+            this.publicPaths = publicPaths;
+        }
+    }
+
+    public static class Audit {
+        private boolean enabled = true;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
         }
     }
 }

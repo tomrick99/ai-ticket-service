@@ -1,0 +1,11 @@
+app:
+  security:
+    enabled: false
+  audit:
+    enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

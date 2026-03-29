@@ -1,24 +1,28 @@
-spring:
+﻿spring:
   application:
     name: ai-ticket-service
   autoconfigure:
     exclude:
       - org.springdoc.webmvc.ui.SwaggerConfig
-  datasource:
-    url: jdbc:h2:mem:tickets;DB_CLOSE_DELAY=-1;MODE=MySQL
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+  profiles:
+    default: local
+    group:
+      prod:
+        - mysql
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: true
-  h2:
-    console:
-      enabled: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: ${SPRING_FLYWAY_BASELINE_ON_MIGRATE:false}
+  sql:
+    init:
+      mode: never
 
 server:
   port: 8080
@@ -28,7 +32,37 @@ server:
       enabled: true
       force: true
 
-# AI：mock 为默认（测试与无网环境）；qwen 为通义兼容 HTTP。密钥勿写死，用环境变量注入。
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:always}
+  health:
+    db:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    AUDIT: ${LOG_LEVEL_AUDIT:INFO}
+    com.example.aiticketservice: ${LOG_LEVEL_APP:INFO}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
+    org.hibernate.SQL: OFF
+
 app:
   ai:
     provider: ${APP_AI_PROVIDER:mock}
@@ -42,3 +76,10 @@ app:
     retry:
       max-attempts: ${QWEN_RETRY_MAX_ATTEMPTS:3}
       delay-ms: ${QWEN_RETRY_DELAY_MS:500}
+  security:
+    enabled: ${APP_SECURITY_ENABLED:true}
+    api-key: ${APP_SECURITY_API_KEY:}
+    header-name: ${APP_SECURITY_HEADER_NAME:X-API-Key}
+    client-id-header: ${APP_SECURITY_CLIENT_ID_HEADER:X-Client-Id}
+  audit:
+    enabled: ${APP_AUDIT_ENABLED:true}

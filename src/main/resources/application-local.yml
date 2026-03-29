@@ -1,7 +1,35 @@
-spring:
+﻿spring:
   config:
     activate:
       on-profile: local
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:tickets;DB_CLOSE_DELAY=-1;MODE=MySQL}
+    driver-class-name: org.h2.Driver
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    hikari:
+      pool-name: H2LocalPool
+      maximum-pool-size: ${SPRING_DATASOURCE_MAXIMUM_POOL_SIZE:5}
+      minimum-idle: ${SPRING_DATASOURCE_MINIMUM_IDLE:1}
+      connection-timeout: ${SPRING_DATASOURCE_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${SPRING_DATASOURCE_IDLE_TIMEOUT:600000}
+      max-lifetime: ${SPRING_DATASOURCE_MAX_LIFETIME:1800000}
+      validation-timeout: ${SPRING_DATASOURCE_VALIDATION_TIMEOUT:5000}
+      connection-test-query: SELECT 1
+  h2:
+    console:
+      enabled: true
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
 
 app:
   ai:
@@ -16,3 +44,5 @@ app:
     retry:
       max-attempts: ${QWEN_RETRY_MAX_ATTEMPTS:2}
       delay-ms: ${QWEN_RETRY_DELAY_MS:300}
+  security:
+    api-key: ${APP_SECURITY_API_KEY:local-dev-key}

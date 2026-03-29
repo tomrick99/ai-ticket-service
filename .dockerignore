@@ -5,3 +5,8 @@ target
 *.resp
 h2.cookies
 tmp-*
+.env
+.env.*
+!.env.example
+docker-compose.override.yml
+README.md

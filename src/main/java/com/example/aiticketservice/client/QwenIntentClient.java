@@ -4,6 +4,9 @@ import com.example.aiticketservice.client.config.AppProperties;
 import com.example.aiticketservice.client.qwen.QwenChatRequest;
 import com.example.aiticketservice.client.qwen.QwenChatResponse;
 import com.example.aiticketservice.client.qwen.QwenResultParser;
+import com.example.aiticketservice.config.SensitiveLogSanitizer;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -14,96 +17,94 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
-/**
- * 通义兼容模式 HTTP 调用；超时、重试、解析与非法 JSON 兜底均在本类及 {@link QwenResultParser} 完成。
- */
 @Component
 public class QwenIntentClient implements IntentClient {
 
     private static final Logger log = LoggerFactory.getLogger(QwenIntentClient.class);
+    private static final int MAX_ERROR_SNIPPET_LENGTH = 240;
 
     private final WebClient qwenWebClient;
     private final AppProperties appProperties;
     private final QwenResultParser qwenResultParser;
+    private final MeterRegistry meterRegistry;
 
     public QwenIntentClient(WebClient qwenWebClient,
                             AppProperties appProperties,
-                            QwenResultParser qwenResultParser) {
+                            QwenResultParser qwenResultParser,
+                            MeterRegistry meterRegistry) {
         this.qwenWebClient = qwenWebClient;
         this.appProperties = appProperties;
         this.qwenResultParser = qwenResultParser;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
     public IntentResult analyze(String userText) {
         AppProperties.Qwen qwen = appProperties.getQwen();
         validateConfig(qwen);
-        String apiKey = qwen.getApiKey();
-        /*
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException("未配置 app.qwen.api-key（可用环境变量 APP_QWEN_API_KEY）");
-        }
 
-        */
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException("Missing app.qwen.api-key or DASHSCOPE_API_KEY");
-        }
-        QwenChatRequest req = buildRequest(userText);
+        String apiKey = qwen.getApiKey();
+        QwenChatRequest request = buildRequest(userText);
         int maxAttempts = Math.max(1, qwen.getRetry().getMaxAttempts());
         long delayMs = Math.max(0L, qwen.getRetry().getDelayMs());
         Duration readTimeout = qwen.resolveReadTimeout();
 
         Exception last = null;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            long startNanos = System.nanoTime();
             try {
                 QwenChatResponse response = Objects.requireNonNull(qwenWebClient.post()
                         .uri("/chat/completions")
                         .header("Authorization", "Bearer " + apiKey)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(req)
+                        .bodyValue(request)
                         .retrieve()
                         .bodyToMono(QwenChatResponse.class)
-                        .block(readTimeout));
+                        .block(readTimeout), "Qwen returned empty response");
 
-                String assistantContent = extractAssistantContent(response);
-                return qwenResultParser.parseAssistantContent(assistantContent);
+                recordLatency("success", startNanos);
+                log.info("Qwen request succeeded attempt={}/{} durationMs={} model={} baseUrl={}",
+                        attempt,
+                        maxAttempts,
+                        elapsedMillis(startNanos),
+                        qwen.getModel(),
+                        qwen.getBaseUrl());
+                return qwenResultParser.parseAssistantContent(extractAssistantContent(response));
             } catch (WebClientResponseException ex) {
                 last = ex;
-                /*
-                if (attempt < maxAttempts - 1 && delayMs > 0) {
-                    try {
-                        Thread.sleep(delayMs);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw new IllegalStateException("重试被中断", ie);
-                    }
-                }
-                */
-                log.warn("Qwen request failed with status={} attempt={}/{} model={} baseUrl={} key={}",
+                recordLatency("http_error", startNanos);
+                log.warn("Qwen request failed status={} attempt={}/{} durationMs={} model={} baseUrl={} body={} key={}",
                         ex.getStatusCode().value(),
                         attempt,
                         maxAttempts,
+                        elapsedMillis(startNanos),
                         qwen.getModel(),
                         qwen.getBaseUrl(),
-                        maskApiKey(apiKey));
+                        sanitizeProviderResponse(ex.getResponseBodyAsString()),
+                        SensitiveLogSanitizer.maskSecret(apiKey));
             } catch (WebClientRequestException ex) {
                 last = ex;
-                log.warn("Qwen request error attempt={}/{} model={} baseUrl={} message={} key={}",
+                recordLatency("request_error", startNanos);
+                log.warn("Qwen request transport error attempt={}/{} durationMs={} model={} baseUrl={} message={} key={}",
                         attempt,
                         maxAttempts,
+                        elapsedMillis(startNanos),
                         qwen.getModel(),
                         qwen.getBaseUrl(),
-                        ex.getMessage(),
-                        maskApiKey(apiKey));
+                        SensitiveLogSanitizer.sanitize(ex.getMessage()),
+                        SensitiveLogSanitizer.maskSecret(apiKey));
             } catch (Exception ex) {
                 last = ex;
-                log.warn("Qwen parsing or timeout failure attempt={}/{} model={} baseUrl={} message={}",
+                recordLatency("unexpected_error", startNanos);
+                log.warn("Qwen request unexpected failure attempt={}/{} durationMs={} model={} baseUrl={} message={}",
                         attempt,
                         maxAttempts,
+                        elapsedMillis(startNanos),
                         qwen.getModel(),
                         qwen.getBaseUrl(),
-                        ex.getMessage());
+                        SensitiveLogSanitizer.sanitize(ex.getMessage()));
             }
 
             if (attempt < maxAttempts && delayMs > 0) {
@@ -115,18 +116,16 @@ public class QwenIntentClient implements IntentClient {
                 }
             }
         }
-        /*
-        throw new IllegalStateException("Qwen 调用在重试后仍失败", last);
-        */
+
         throw new IllegalStateException("Qwen request failed after retries", last);
     }
 
     private QwenChatRequest buildRequest(String userText) {
-        QwenChatRequest req = new QwenChatRequest();
-        req.setModel(appProperties.getQwen().getModel());
-        req.getMessages().add(new QwenChatRequest.Message("system", QwenResultParser.systemPrompt()));
-        req.getMessages().add(new QwenChatRequest.Message("user", userText == null ? "" : userText));
-        return req;
+        QwenChatRequest request = new QwenChatRequest();
+        request.setModel(appProperties.getQwen().getModel());
+        request.getMessages().add(new QwenChatRequest.Message("system", QwenResultParser.systemPrompt()));
+        request.getMessages().add(new QwenChatRequest.Message("user", userText == null ? "" : userText));
+        return request;
     }
 
     private void validateConfig(AppProperties.Qwen qwen) {
@@ -141,25 +140,38 @@ public class QwenIntentClient implements IntentClient {
         }
     }
 
-    private String extractAssistantContent(QwenChatResponse resp) {
-        if (resp.getChoices() == null || resp.getChoices().isEmpty()) {
+    private String extractAssistantContent(QwenChatResponse response) {
+        if (response.getChoices() == null || response.getChoices().isEmpty()) {
             return "";
         }
-        QwenChatResponse.Message msg = resp.getChoices().get(0).getMessage();
-        return msg != null ? msg.getContent() : "";
+        QwenChatResponse.Message message = response.getChoices().get(0).getMessage();
+        return message != null ? message.getContent() : "";
+    }
+
+    private String sanitizeProviderResponse(String responseBody) {
+        if (isBlank(responseBody)) {
+            return "";
+        }
+        String sanitized = SensitiveLogSanitizer.sanitize(responseBody).replaceAll("\\s+", " ").trim();
+        if (sanitized.length() <= MAX_ERROR_SNIPPET_LENGTH) {
+            return sanitized;
+        }
+        return sanitized.substring(0, MAX_ERROR_SNIPPET_LENGTH) + "...";
     }
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
 
-    private String maskApiKey(String apiKey) {
-        if (apiKey == null || apiKey.isBlank()) {
-            return "<empty>";
-        }
-        if (apiKey.length() <= 8) {
-            return "****";
-        }
-        return apiKey.substring(0, 4) + "****" + apiKey.substring(apiKey.length() - 4);
+    private long elapsedMillis(long startNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+    }
+
+    private void recordLatency(String outcome, long startNanos) {
+        Timer.builder("app.provider.qwen.latency")
+                .tag("provider", "qwen")
+                .tag("outcome", outcome)
+                .register(meterRegistry)
+                .record(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS);
     }
 }
