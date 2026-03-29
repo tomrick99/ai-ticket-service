@@ -1,6 +1,7 @@
 package com.example.aiticketservice.client.config;
 
 import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -11,6 +12,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 public class QwenWebClientConfig {
@@ -18,9 +20,14 @@ public class QwenWebClientConfig {
     @Bean
     public WebClient qwenWebClient(AppProperties appProperties, com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
         AppProperties.Qwen q = appProperties.getQwen();
+        Duration connectTimeout = q.resolveConnectTimeout();
+        Duration readTimeout = q.resolveReadTimeout();
         HttpClient httpClient = HttpClient.create()
-                .responseTimeout(q.getTimeout())
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) Math.min(q.getTimeout().toMillis(), Integer.MAX_VALUE));
+                .responseTimeout(readTimeout)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,
+                        (int) Math.min(connectTimeout.toMillis(), Integer.MAX_VALUE))
+                .doOnConnected(conn ->
+                        conn.addHandlerLast(new ReadTimeoutHandler(readTimeout.toMillis(), TimeUnit.MILLISECONDS)));
 
         ExchangeStrategies strategies = ExchangeStrategies.builder()
                 .codecs(configurer -> {

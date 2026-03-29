@@ -56,8 +56,10 @@ public class AppProperties {
     public static class Qwen {
         private String baseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1";
         private String apiKey = "";
-        private String model = "qwen-turbo";
-        private Duration timeout = Duration.ofSeconds(60);
+        private String model = "qwen-plus";
+        private Duration timeout;
+        private Duration connectTimeout = Duration.ofSeconds(5);
+        private Duration readTimeout = Duration.ofSeconds(60);
         private Retry retry = new Retry();
 
         public String getBaseUrl() {
@@ -90,6 +92,36 @@ public class AppProperties {
 
         public void setTimeout(Duration timeout) {
             this.timeout = timeout;
+        }
+
+        public Duration getConnectTimeout() {
+            return connectTimeout;
+        }
+
+        public void setConnectTimeout(Duration connectTimeout) {
+            this.connectTimeout = connectTimeout;
+        }
+
+        public Duration getReadTimeout() {
+            return readTimeout;
+        }
+
+        public void setReadTimeout(Duration readTimeout) {
+            this.readTimeout = readTimeout;
+        }
+
+        public Duration resolveConnectTimeout() {
+            return connectTimeout != null ? connectTimeout : Duration.ofSeconds(5);
+        }
+
+        public Duration resolveReadTimeout() {
+            if (readTimeout != null) {
+                return readTimeout;
+            }
+            if (timeout != null) {
+                return timeout;
+            }
+            return Duration.ofSeconds(60);
         }
 
         public Retry getRetry() {

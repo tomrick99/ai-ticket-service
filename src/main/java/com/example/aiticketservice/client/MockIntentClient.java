@@ -9,10 +9,11 @@ import java.util.regex.Pattern;
  * 本地关键词模拟 AI，无网络依赖；结构化输出与 Qwen 路径对齐。
  */
 @Component
-public class MockIntentClient {
+public class MockIntentClient implements IntentClient {
 
     private static final Pattern ID_PATTERN = Pattern.compile("(\\d+)");
 
+    @Override
     public IntentResult analyze(String text) {
         String normalized = text == null ? "" : text.trim();
         IntentType intent;

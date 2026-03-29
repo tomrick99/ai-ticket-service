@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.RecordedRequest;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -70,7 +72,15 @@ class QwenIntentClientMockServerTest {
         assertThat(r.getTitle()).isEqualTo("标题");
         assertThat(r.getDescription()).isEqualTo("描述");
     }
+/*
+        RecordedRequest recordedRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertThat(recordedRequest).isNotNull();
+        assertThat(recordedRequest.getPath()).isEqualTo("/chat/completions");
+        assertThat(recordedRequest.getHeader("Authorization")).isEqualTo("Bearer test-api-key");
+        assertThat(recordedRequest.getBody().readUtf8()).contains("\"model\"");
+    }
 
+*/
     @Test
     void qwenReturnsMalformedAssistantContent_parserYieldsUnknown() throws Exception {
         String body = buildChatCompletionBody("<<<not-json>>>");
@@ -81,6 +91,21 @@ class QwenIntentClientMockServerTest {
 
         IntentResult r = qwenIntentClient.analyze("x");
         assertThat(r.getIntent().name()).isEqualTo("UNKNOWN");
+    }
+
+    @Test
+    void qwenRequestContainsExpectedPathHeaderAndModel() throws Exception {
+        server.enqueue(new MockResponse()
+                .setBody(buildChatCompletionBody("{\"intent\":\"UNKNOWN\"}"))
+                .addHeader("Content-Type", "application/json"));
+
+        qwenIntentClient.analyze("ping");
+
+        RecordedRequest recordedRequest = server.takeRequest(1, TimeUnit.SECONDS);
+        assertThat(recordedRequest).isNotNull();
+        assertThat(recordedRequest.getPath()).isEqualTo("/chat/completions");
+        assertThat(recordedRequest.getHeader("Authorization")).isEqualTo("Bearer test-api-key");
+        assertThat(recordedRequest.getBody().readUtf8()).contains("\"model\"");
     }
 
     private String buildChatCompletionBody(String assistantContent) throws Exception {

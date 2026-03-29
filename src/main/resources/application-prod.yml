@@ -1,0 +1,18 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+app:
+  ai:
+    provider: ${APP_AI_PROVIDER:qwen}
+    fallback: ${APP_AI_FALLBACK:none}
+  qwen:
+    base-url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    api-key: ${DASHSCOPE_API_KEY:}
+    model: ${QWEN_MODEL:qwen-plus}
+    connect-timeout: ${QWEN_CONNECT_TIMEOUT:5s}
+    read-timeout: ${QWEN_READ_TIMEOUT:60s}
+    retry:
+      max-attempts: ${QWEN_RETRY_MAX_ATTEMPTS:3}
+      delay-ms: ${QWEN_RETRY_DELAY_MS:500}
