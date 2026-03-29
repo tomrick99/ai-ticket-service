@@ -1,0 +1,64 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.0)
+
+2026-03-29T22:12:54.360+01:00  INFO 7116 --- [ai-ticket-service] [           main] c.e.a.AiTicketServiceApplication         : Starting AiTicketServiceApplication v0.0.1-SNAPSHOT using Java 17.0.12 with PID 7116 (D:\develop\project副本\ai-ticket-service\target\ai-ticket-service-0.0.1-SNAPSHOT-exec.jar started by 34170 in D:\develop\project副本\ai-ticket-service)
+2026-03-29T22:12:54.368+01:00  INFO 7116 --- [ai-ticket-service] [           main] c.e.a.AiTicketServiceApplication         : The following 2 profiles are active: "prod", "mysql"
+2026-03-29T22:12:56.402+01:00  INFO 7116 --- [ai-ticket-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-03-29T22:12:56.525+01:00  INFO 7116 --- [ai-ticket-service] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 112 ms. Found 1 JPA repository interface.
+2026-03-29T22:12:57.865+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8081 (http)
+2026-03-29T22:12:57.881+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-03-29T22:12:57.883+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.41]
+2026-03-29T22:12:57.955+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-03-29T22:12:57.958+01:00  INFO 7116 --- [ai-ticket-service] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3503 ms
+2026-03-29T22:12:58.834+01:00  INFO 7116 --- [ai-ticket-service] [           main] com.zaxxer.hikari.HikariDataSource       : MysqlTicketPool - Starting...
+2026-03-29T22:12:59.022+01:00  INFO 7116 --- [ai-ticket-service] [           main] com.zaxxer.hikari.pool.HikariPool        : MysqlTicketPool - Added connection conn0: url=jdbc:h2:mem:prodruntime user=SA
+2026-03-29T22:12:59.024+01:00  INFO 7116 --- [ai-ticket-service] [           main] com.zaxxer.hikari.HikariDataSource       : MysqlTicketPool - Start completed.
+2026-03-29T22:12:59.062+01:00  INFO 7116 --- [ai-ticket-service] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:h2:mem:prodruntime (H2 2.3)
+2026-03-29T22:12:59.118+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-29T22:12:59.121+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 1 migration (execution time 00:00.022s)
+2026-03-29T22:12:59.130+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-29T22:12:59.177+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-29T22:12:59.185+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema "PUBLIC" to version "1 - create ticket table"
+2026-03-29T22:12:59.213+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 1 migration to schema "PUBLIC", now at version v1 (execution time 00:00.008s)
+2026-03-29T22:12:59.391+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-03-29T22:12:59.516+01:00  INFO 7116 --- [ai-ticket-service] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.15.Final
+2026-03-29T22:12:59.583+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-03-29T22:12:59.934+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-03-29T22:12:59.984+01:00  WARN 7116 --- [ai-ticket-service] [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-03-29T22:12:59.998+01:00  INFO 7116 --- [ai-ticket-service] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (MysqlTicketPool)']
+	Database driver: undefined/unknown
+	Database version: 2.3.232
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-03-29T22:13:00.715+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-03-29T22:13:00.735+01:00  INFO 7116 --- [ai-ticket-service] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-03-29T22:13:01.332+01:00  WARN 7116 --- [ai-ticket-service] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-03-29T22:13:02.252+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoints beneath base path '/actuator'
+2026-03-29T22:13:02.409+01:00  INFO 7116 --- [ai-ticket-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8081 (http) with context path '/'
+2026-03-29T22:13:02.428+01:00  INFO 7116 --- [ai-ticket-service] [           main] c.e.a.AiTicketServiceApplication         : Started AiTicketServiceApplication in 8.922 seconds (process running for 9.583)
+2026-03-29T22:13:02.919+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-03-29T22:13:03.029+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-1] AUDIT                                    : requestId=c3a9c585 method=GET path=/actuator/health status=200 durationMs=106 caller=127.0.0.1
+2026-03-29T22:13:12.916+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-3] AUDIT                                    : requestId=18398c69 method=GET path=/actuator/health status=200 durationMs=2 caller=127.0.0.1
+2026-03-29T22:13:12.954+01:00  WARN 7116 --- [ai-ticket-service] [nio-8081-exec-5] c.e.a.config.ApiKeyAuthFilter            : Unauthorized request path=/actuator/metrics method=GET caller=127.0.0.1 header=X-API-Key
+2026-03-29T22:13:12.956+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-5] AUDIT                                    : requestId=257e9c10 method=GET path=/actuator/metrics status=401 durationMs=2 caller=127.0.0.1
+2026-03-29T22:13:13.002+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-8] AUDIT                                    : requestId=7aa07894 method=GET path=/actuator/metrics status=200 durationMs=3 caller=127.0.0.1
+2026-03-29T22:13:13.038+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-6] AUDIT                                    : requestId=9ad8f4a0 method=GET path=/swagger-ui.html status=404 durationMs=11 caller=127.0.0.1
+2026-03-29T22:13:13.125+01:00  WARN 7116 --- [ai-ticket-service] [nio-8081-exec-4] c.e.a.config.ApiKeyAuthFilter            : Unauthorized request path=/tickets/1 method=GET caller=127.0.0.1 header=X-API-Key
+2026-03-29T22:13:13.126+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-4] AUDIT                                    : requestId=ad177349 method=GET path=/tickets/1 status=401 durationMs=0 caller=127.0.0.1
+2026-03-29T22:13:13.238+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-5] AUDIT                                    : requestId=07ff65f6 method=GET path=/tickets/1 status=400 durationMs=72 caller=127.0.0.1
+2026-03-29T22:13:20.769+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-8] AUDIT                                    : requestId=be640823 method=GET path=/swagger-ui.html status=404 durationMs=3 caller=127.0.0.1
+2026-03-29T22:13:20.781+01:00  WARN 7116 --- [ai-ticket-service] [io-8081-exec-10] c.e.a.config.ApiKeyAuthFilter            : Unauthorized request path=/actuator/metrics method=GET caller=127.0.0.1 header=X-API-Key
+2026-03-29T22:13:20.782+01:00  INFO 7116 --- [ai-ticket-service] [io-8081-exec-10] AUDIT                                    : requestId=7b94b170 method=GET path=/actuator/metrics status=401 durationMs=0 caller=127.0.0.1
+2026-03-29T22:13:20.801+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-2] AUDIT                                    : requestId=85e67524 method=GET path=/actuator/metrics status=200 durationMs=2 caller=127.0.0.1
+2026-03-29T22:13:51.138+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-4] AUDIT                                    : requestId=c0c15ec5 method=POST path=/ai/tickets/handle status=200 durationMs=93 caller=prod-test
+2026-03-29T22:13:51.218+01:00  INFO 7116 --- [ai-ticket-service] [nio-8081-exec-8] AUDIT                                    : requestId=8eb1cb1a method=POST path=/ai/tickets/handle status=200 durationMs=7 caller=prod-test

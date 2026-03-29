@@ -206,6 +206,13 @@ Compose 服务：
 - `app`
 - `mysql`
 
+默认端口映射：
+
+- `APP_HOST_PORT=8080`
+- `MYSQL_HOST_PORT=3307`
+
+这样可以避开宿主机本地 MySQL 已占用 `3306` 的常见冲突。
+
 使用步骤：
 
 ```powershell

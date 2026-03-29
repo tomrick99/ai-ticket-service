@@ -5,9 +5,6 @@ import org.springframework.stereotype.Component;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * 本地关键词模拟 AI，无网络依赖；结构化输出与 Qwen 路径对齐。
- */
 @Component
 public class MockIntentClient implements IntentClient {
 
@@ -17,11 +14,14 @@ public class MockIntentClient implements IntentClient {
     public IntentResult analyze(String text) {
         String normalized = text == null ? "" : text.trim();
         IntentType intent;
-        if (normalized.contains("创建") || normalized.contains("新建")) {
+        if (containsAny(normalized,
+                "\u521b\u5efa", "\u65b0\u5efa", "\u9352\u6d9a\u7f13", "\u93c2\u677f\u7f13", "create")) {
             intent = IntentType.CREATE_TICKET;
-        } else if (normalized.contains("查询") || normalized.contains("查看")) {
+        } else if (containsAny(normalized,
+                "\u67e5\u8be2", "\u67e5\u770b", "\u67e5\u4e0b", "\u93cc\u30e8\ue1d7", "\u93cc\u30e7\u6e45", "query")) {
             intent = IntentType.QUERY_TICKET;
-        } else if (normalized.contains("关闭") || normalized.contains("结束")) {
+        } else if (containsAny(normalized,
+                "\u5173\u95ed", "\u7ed3\u675f", "\u5173\u6389", "\u9358\u5fd4\u5a0a\u59ab", "\u7f02\u4f79\u631b\u6f7c", "close")) {
             intent = IntentType.CLOSE_TICKET;
         } else {
             intent = IntentType.UNKNOWN;
@@ -29,7 +29,7 @@ public class MockIntentClient implements IntentClient {
 
         Long ticketId = extractTicketId(normalized, intent);
         if (intent == IntentType.CREATE_TICKET) {
-            return new IntentResult(intent, null, "AI创建工单", normalized.isEmpty() ? text : normalized);
+            return new IntentResult(intent, null, "AI\u521b\u5efa\u5de5\u5355", normalized.isEmpty() ? text : normalized);
         }
         return new IntentResult(intent, ticketId, null, null);
     }
@@ -43,5 +43,14 @@ public class MockIntentClient implements IntentClient {
             return Long.parseLong(matcher.group(1));
         }
         return null;
+    }
+
+    private boolean containsAny(String text, String... keywords) {
+        for (String keyword : keywords) {
+            if (text.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
